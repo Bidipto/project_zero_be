@@ -1,19 +1,14 @@
-# project_zero_be
+# Fast_API_Backend
 
-This is the backend for Project Zero
+1. Create Virtual Env
+2. install required packages using :
 
-## Getting Started
+```powershell
+   pip install requirements.txt
+```
 
-1. Install dependencies:
-   ```powershell
-   npm install
-   ```
-2. Run the backend server:
-   ```powershell
-   npm start
-   ```
+3. run server :
 
-This will start a minimal Express.js API at `http://localhost:3000/`.
-
-- Root endpoint `/` returns: `Hello from FAST API (Node.js/Express)!`
-
+```powershell
+fastapi dev pz_be_services\main.py
+```
