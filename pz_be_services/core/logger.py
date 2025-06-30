@@ -2,7 +2,7 @@ import logging
 import os
 from colorlog import ColoredFormatter  
 
-def get_logger(name: str = "health_logger", db : bool = False) -> logging.Logger:
+def get_logger(name: str = "logger", db : bool = False) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     log_dir_path = os.path.join("pz_be_services\logs")
