@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+app = FastAPI(title="Project Zero Backend Service")
 
 
 @app.get("/health")
