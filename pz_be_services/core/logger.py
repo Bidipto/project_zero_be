@@ -22,7 +22,7 @@ def get_logger(name: str = "logger", db : bool = False) -> logging.Logger:
         fh.setLevel(logging.DEBUG)
 
         formatter = ColoredFormatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
+            '%(asctime)s - %(levelname)s - %(name)s -  %(message)s',
             
         )
         fh.setFormatter(formatter)

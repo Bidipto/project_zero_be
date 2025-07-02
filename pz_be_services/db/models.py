@@ -11,6 +11,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime, timezone
 from .database import engine, Base
+from core.logger import get_logger
+
+logger = get_logger()
 
 # Association table for many-to-many relationship between Chat and User
 chat_participants = Table(
@@ -104,5 +107,5 @@ class Message(Base):
     sender = relationship("User", back_populates="sent_messages")
 
 
-# logger.debug('Creating table structures in DB')
+logger.debug('Creating table structures in DB')
 Base.metadata.create_all(bind=engine)
