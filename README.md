@@ -12,3 +12,8 @@
 ```powershell
 fastapi dev pz_be_services\main.py
 ```
+
+To update the requirements:
+```powershell
+pip freeze  > requirements.txt
+```
