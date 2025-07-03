@@ -19,11 +19,14 @@ SECRET_KEY = b"ygfsgsdfpogjkf90guifd98gdf9gkdfpgdfg0d0fgdfgodfpgld"
 ACCESS_TOKEN_EXPIRE_MINUTES = 180
 
 
-class UserCreate(BaseModel):
+class UserRegisterRequest(BaseModel):
     email: EmailStr
     username: str
     full_name: str
     password: str
+
+class UserRegisterResponse(BaseModel):
+    username: str
 
 class UserLogin(BaseModel):
     username: str
@@ -65,11 +68,11 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 
 
-@router.post("/register", status_code=201)
-def register(user: UserCreate):
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def register(user: UserRegisterRequest):
     if user.username in users_db:
         logger.warning(f"Registration failed -- existing user: {user.username}")
-        raise HTTPException(status_code=400, detail="Username already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
     
     users_db[user.username] = {
         "email": user.email,
@@ -77,14 +80,15 @@ def register(user: UserCreate):
         "hashed_password": hash_password(user.password)
     }
     logger.info(f"User registered: {user.username}")
-    return {"msg": "User registered successfully"}
+    return UserRegisterResponse(username=user.username)
 
-@router.post("/login", response_model=Token)
+
+@router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
 def login(credentials: UserLogin):
     user = users_db.get(credentials.username)
     if not user or not verify_password(credentials.password, user["hashed_password"]):
         logger.warning(f"Failed login attempt for user: {credentials.username}")
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     try:
         token = create_access_token(data={"username": credentials.username})
@@ -92,4 +96,4 @@ def login(credentials: UserLogin):
         return {"access_token": token}
     except Exception as e:
         logger.error(f"Token creation failed for {credentials.username}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Token creation failed")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Token creation failed")
