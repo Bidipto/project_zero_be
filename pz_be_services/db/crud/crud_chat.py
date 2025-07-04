@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from .base import CRUDBase
 from ..models import Chat, User, Message
-from ..schemas.chat import ChatCreate, ChatUpdate
+from ...schemas.chat import ChatCreate, ChatUpdate
 
 class CRUDChat(CRUDBase[Chat, ChatCreate, ChatUpdate]):
     def create_with_participants(

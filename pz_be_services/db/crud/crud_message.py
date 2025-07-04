@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from .base import CRUDBase
 from ..models import Message, Chat
-from ..schemas.message import MessageCreate, MessageUpdate
+from ...schemas.message import MessageCreate, MessageUpdate
 
 class CRUDMessage(CRUDBase[Message, MessageCreate, MessageUpdate]):
     def create_with_chat_update(self, db: Session, *, obj_in: MessageCreate) -> Message:

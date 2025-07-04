@@ -4,7 +4,7 @@ from sqlalchemy import or_
 
 from .base import CRUDBase
 from ..models import User
-from ..schemas.user import UserCreate, UserUpdate
+from ...schemas.user import UserCreate, UserUpdate
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_username(self, db: Session, *, username: str) -> Optional[User]:
@@ -35,7 +35,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def get_active_users(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[User]:
         """Get all active users"""
-        return db.query(User).filter(User.is_active == True).offset(skip).limit(limit).all()
+        return db.query(User).filter(User.is_active).offset(skip).limit(limit).all()
 
     def deactivate_user(self, db: Session, *, user_id: int) -> Optional[User]:
         """Deactivate a user instead of deleting"""
@@ -64,7 +64,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                 User.email.ilike(search_pattern),
                 User.full_name.ilike(search_pattern)
             )
-        ).filter(User.is_active == True).offset(skip).limit(limit).all()
+        ).filter(User.is_active).offset(skip).limit(limit).all()
 
     def get_user_chats(self, db: Session, *, user_id: int) -> List:
         """Get all chats for a user"""
