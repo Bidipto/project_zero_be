@@ -1,6 +1,6 @@
 import logging
 import os
-from colorlog import ColoredFormatter  
+ 
 
 def get_logger(name: str = "logger", db : bool = False) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -21,8 +21,8 @@ def get_logger(name: str = "logger", db : bool = False) -> logging.Logger:
         fh = logging.FileHandler(file_path)
         fh.setLevel(logging.DEBUG)
 
-        formatter = ColoredFormatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(name)s -  %(message)s',
             
         )
         fh.setFormatter(formatter)
