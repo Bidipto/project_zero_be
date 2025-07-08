@@ -7,15 +7,23 @@ from core.logger import get_logger
 logger = get_logger(__name__)
 # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
 
-# logger implement kor ekhane 
-logger.info('DB: Creating database engine')
+# logger implement kor ekhane
+logger.info("DB: Creating database engine")
 
-engine = create_engine(EnvironmentVariables.SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, pool_size=50, max_overflow=10, echo=True)
+engine = create_engine(
+    EnvironmentVariables.SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    pool_size=50,
+    max_overflow=10,
+    echo=True,
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 def get_db() -> SessionLocal:
     """
@@ -24,10 +32,10 @@ def get_db() -> SessionLocal:
     Returns:
     - A new SQLAlchemy session object.
     """
-    logger.debug('DB: Creating database session')
+    logger.debug("DB: Creating database session")
     db = SessionLocal()
     try:
         yield db
     finally:
-        logger.debug('DB: Closing database session')
+        logger.debug("DB: Closing database session")
         db.close()
