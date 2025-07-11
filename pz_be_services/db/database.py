@@ -15,7 +15,6 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     pool_size=50,
     max_overflow=10,
-    echo=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

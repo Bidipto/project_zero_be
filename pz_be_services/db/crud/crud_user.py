@@ -4,7 +4,7 @@ from sqlalchemy import or_
 
 from .base import CRUDBase
 from ..models import User
-from schemas.user import UserCreate, UserUpdate
+from schemas.user_schemas import UserCreate, UserUpdate
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_username(self, db: Session, *, username: str) -> Optional[User]:
@@ -31,7 +31,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         if obj_in.email and self.get_by_email(db, email=obj_in.email):
             raise ValueError("Email already exists")
         
-        return super().create(db, obj_in=obj_in)
+        return super().create(db,obj_in= obj_in)
 
     def get_active_users(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[User]:
         """Get all active users"""

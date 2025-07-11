@@ -36,13 +36,14 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=True)
     full_name = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True)
+    
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships
@@ -53,6 +54,14 @@ class User(Base):
         "Message", back_populates="sender", cascade="all, delete-orphan"
     )
 
+
+
+class UserPassword(Base):
+    __tablename__ = "user_passwords"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    hashed_password = Column(String)
 
 class Chat(Base):
     __tablename__ = "chats"
