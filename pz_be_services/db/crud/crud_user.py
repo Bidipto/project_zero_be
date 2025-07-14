@@ -4,7 +4,7 @@ from sqlalchemy import or_
 
 from .base import CRUDBase
 from ..models import User
-from schemas.user_schemas import UserCreate, UserUpdate
+from schemas.user import UserCreate, UserUpdate
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_username(self, db: Session, *, username: str) -> Optional[User]:

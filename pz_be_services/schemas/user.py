@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = Field(None, max_length=100)
     is_active: bool = True
+    
 
 
 # Schema for creating a user
@@ -16,10 +17,12 @@ class UserCreate(UserBase):
     username: str = Field(..., min_length=3, max_length=50)
     email: Optional[EmailStr] = None
 
-
 class UserCreateReq(UserCreate):
     pass
 
+# Schema class for user password
+class UserPassword(UserCreate):
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
 
 # Schema for updating a user
 class UserUpdate(BaseModel):

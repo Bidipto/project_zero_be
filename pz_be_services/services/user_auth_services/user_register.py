@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Depends
-from schemas.user_schemas import UserBase, UserCreate, UserPassword
+from schemas.user import UserBase, UserCreate, UserPassword
 from sqlalchemy.orm import Session
 from db.crud import user
 from core.password import hash_password

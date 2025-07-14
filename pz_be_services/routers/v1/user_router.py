@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from services.user_auth_services.user_register import UserRegisterService
 from db.database import get_db
 from core.password import verify_password
-from core.auth_generation import create_access_token
-from schemas.user_schemas import UserResponse, UserLogin, UserPassword
+from schemas.user import UserResponse, UserLogin, UserPassword
 from db.crud.crud_password import create_password
 
 from core.logger import get_logger
