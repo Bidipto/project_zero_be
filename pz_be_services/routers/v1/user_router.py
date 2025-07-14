@@ -14,38 +14,6 @@ router = APIRouter()
 logger = get_logger("user")
 
 
-users_db = {}
-
-
-
-
-
-# @router.post("/register", status_code=status.HTTP_201_CREATED)
-# def register(user: UserCreate, db: Session = Depends(get_db)):
-#     try:
-#         register_service = UserRegisterService(db)
-
-#         # Check if user already exists
-#         user_exists = register_service.check_user_exists(user_obj=user)
-
-#         if user_exists:
-#             raise HTTPException(
-#                 status_code=status.HTTP_400_BAD_REQUEST,
-#                 detail="User already exists",
-#             )
-#         # validate and create user
-#         user = register_service.create_user(user)
-#         logger.info(f"User registered: {user.username}")
-#         return UserResponse(username=user.username)
-#     except HTTPException as e:
-#         raise e
-#     except Exception as e:
-#         logger.exception(str(e))
-#         raise HTTPException(
-#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                 detail=str(e),
-#             )
-
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserPassword, db: Session = Depends(get_db)):
@@ -66,7 +34,13 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
         user = register_service.create_user(user)
         
         logger.info(f"User registered: {user.username}")
-        return True
+        response = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+          
+        }
+        return response
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -79,23 +53,23 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
 
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
-def login(credentials: UserLogin):
-    user = users_db.get(credentials.username)
-    if not user or not verify_password(credentials.password, user["hashed_password"]):
-        logger.warning(f"Failed login attempt for user: {credentials.username}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
+# @router.post("/login", status_code=status.HTTP_200_OK)
+# def login(credentials: UserLogin):
+#     user = users_db.get(credentials.username)
+#     if not user or not verify_password(credentials.password, user["hashed_password"]):
+#         logger.warning(f"Failed login attempt for user: {credentials.username}")
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid username or password",
+#         )
 
-    try:
-        token = create_access_token(data={"username": credentials.username})
-        logger.info(f"User logged in: {credentials.username}")
-        return {"access_token": token}
-    except Exception as e:
-        logger.error(f"Token creation failed for {credentials.username}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token creation failed",
-        )
+#     try:
+#         token = create_access_token(data={"username": credentials.username})
+#         logger.info(f"User logged in: {credentials.username}")
+#         return {"access_token": token}
+#     except Exception as e:
+#         logger.error(f"Token creation failed for {credentials.username}: {str(e)}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Token creation failed",
+#         )
