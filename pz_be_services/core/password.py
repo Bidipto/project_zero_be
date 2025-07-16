@@ -9,5 +9,7 @@ def hash_password(user_password: schemas.UserPassword) -> str:
     return hashed_password.decode('utf-8')
 
 
-def verify_password(user_password: schemas.UserPassword, hashed_password: bytes) -> bool:
-    return bcrypt.checkpw(user_password.encode, hashed_password)
+def verify_password(user_password: str, hashed_password: str) -> bool:
+    print(user_password, hashed_password)
+    return bcrypt.checkpw(user_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    
