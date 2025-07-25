@@ -8,13 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 logger = get_logger(__name__)
 logger.info("app starting")
 
-app = FastAPI()
+app = FastAPI(title="ProjectX")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
