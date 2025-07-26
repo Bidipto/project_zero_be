@@ -1,6 +1,6 @@
 # user_router.py
 from fastapi import APIRouter, HTTPException, status,Request, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from services.user_auth_services.user_register import UserRegisterService
 from db.database import get_db
@@ -113,31 +113,30 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         )
 
 
+
+
+
+
+
+
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
-GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_ID
-REDIRECT_URI = EnvironmentVariables.GITHUB_REDIRECT_URI
+GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
+CLIENT_REDIRECT_URI = "http://localhost:8000/v1/user/auth/github/callback"
 
-
-AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
-TOKEN_URL     = "https://github.com/login/oauth/access_token"
-USER_API      = "https://api.github.com/user"
-
-
-
-
-
-
-
+GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
+GITHUB_USER_API = "https://api.github.com/user"
 
 @router.get("/login/github")
 def login():
     params = {
         "client_id": GITHUB_CLIENT_ID,
-        "redirect_uri": REDIRECT_URI,
+        "redirect_uri": CLIENT_REDIRECT_URI,
         "scope": "read:user user:email",
     }
     query = "&".join([f"{k}={v}" for k, v in params.items()])
-    return RedirectResponse(f"{AUTHORIZE_URL}?{query}")
+    print(query)
+    return RedirectResponse(f"{GITHUB_AUTHORIZE_URL}?{query}")
 
 @router.get("/auth/github/callback")
 async def github_callback(request: Request, code: str = None):
@@ -150,9 +149,9 @@ async def github_callback(request: Request, code: str = None):
             "client_id": GITHUB_CLIENT_ID,
             "client_secret": GITHUB_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": REDIRECT_URI,
+            "redirect_uri": CLIENT_REDIRECT_URI,
         }
-        token_resp = await client.post(TOKEN_URL, data=data, headers=headers)
+        token_resp = await client.post(GITHUB_TOKEN_URL, data=data, headers=headers)
         token_json = token_resp.json()
         print(token_json)
         access_token = token_json.get("access_token")
@@ -160,8 +159,32 @@ async def github_callback(request: Request, code: str = None):
             raise HTTPException(status_code=400, detail="Failed to obtain access token")
         # Get user info
         headers.update({"Authorization": f"token {access_token}"})
-        user_resp = await client.get(USER_API, headers=headers)
+        user_resp = await client.get(GITHUB_USER_API, headers=headers)
         user_data = user_resp.json()
         print(user_data)
     request.session["user"] = user_data
-    return RedirectResponse("/me")
+    return RedirectResponse("http://127.0.0.1:3000")
+
+
+
+
+
+
+
+
+
+# @router.get("/me")
+# def get_me(request: Request):
+#     user = request.session.get("user")
+#     if not user:
+#         return HTMLResponse("<a href='/login'>Login with GitHub</a>")
+#     return HTMLResponse(f"<h1>Logged in as {user['login']}</h1><img src='{user['avatar_url']}' width=100>")
+
+
+# @router.get("/")
+# def index():
+#     return HTMLResponse("""
+#     <h1>FastAPI GitHub Login Demo</h1>
+#     <a href="/login">Login with GitHub</a>
+#     """)
+
