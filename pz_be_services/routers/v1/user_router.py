@@ -1,19 +1,13 @@
-# user_router.py
-from fastapi import APIRouter, HTTPException, status,Request, Depends
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from services.user_auth_services.user_register import UserRegisterService
 from db.database import get_db
 from core.password import verify_password
-from schemas.user import UserResponse, UserLogin, UserPassword, UserBase, UserCreate
-from db.crud.crud_password import create_password
+from schemas.user import  UserLogin, UserPassword,  UserCreate
 from core.auth import create_access_token
-from db.crud.crud_password import create_password, get_password_by_user_id
+from db.crud.crud_password import  get_password_by_user_id
 from core.logger import get_logger
 from fastapi.responses import RedirectResponse
-from authlib.integrations.starlette_client import OAuth
-from starlette.config import Config
-from starlette.middleware.sessions import SessionMiddleware
 from core.config import EnvironmentVariables
 import httpx
 from urllib.parse import urlencode
@@ -61,12 +55,6 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
 
 
 
-
-
-
-
-
-
 @router.post("/login",  status_code=status.HTTP_202_ACCEPTED)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
@@ -111,19 +99,17 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         )
 
 
-
-
-
-
-
+#------------------------Login with Github----------------------------------------
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-CLIENT_REDIRECT_URI = "http://localhost:8000/v1/user/auth/github/callback"
+CLIENT_REDIRECT_URI = EnvironmentVariables.CLIENT_REDIRECT_URI
 
-GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
-GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
-GITHUB_USER_API = "https://api.github.com/user"
+GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
+GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
+GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
+
+FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_USER_URL
 
 @router.get("/login/github")
 def login():
@@ -153,15 +139,13 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
         }
         token_resp = await client.post(GITHUB_TOKEN_URL, data=data, headers=headers)
         token_json = token_resp.json()
-        print(token_json)
         access_token = token_json.get("access_token")
         if access_token is None:
             raise HTTPException(status_code=400, detail="Failed to obtain access token")
         # Get user info
         headers.update({"Authorization": f"token {access_token}"})
         user_resp = await client.get(GITHUB_USER_API, headers=headers)
-        user_data = user_resp.json()
-        print(user_data) 
+        user_data = user_resp.json() 
 
         userobj = UserCreate(username=user_data.get("login"))
         # register the info in db
@@ -182,7 +166,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             }
             access_token = create_access_token(token_payload)
             user_info = user.username
-            redirect_url = f"http://127.0.0.1:3000?access_token={access_token}&username={user_info}"
+            redirect_url = f"{FRONTEND_REDIRECT_URL}?access_token={access_token}&username={user_info}"
             
             print(redirect_url)
 
@@ -199,24 +183,4 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
 
 
 
-
-# edirect_url = f"{FRONTEND_URL}?access_token={token['access_token']}&username={user_info['login']}"
-
-
-
-
-# @router.get("/me")
-# def get_me(request: Request):
-#     user = request.session.get("user")
-#     if not user:
-#         return HTMLResponse("<a href='/login'>Login with GitHub</a>")
-#     return HTMLResponse(f"<h1>Logged in as {user['login']}</h1><img src='{user['avatar_url']}' width=100>")
-
-
-# @router.get("/")
-# def index():
-#     return HTMLResponse("""
-#     <h1>FastAPI GitHub Login Demo</h1>
-#     <a href="/login">Login with GitHub</a>
-#     """)
 

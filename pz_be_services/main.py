@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from routers.v1 import health_router
 from routers.v1 import user_router
 from core.logger import get_logger
+from core.config import EnvironmentVariables
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -13,7 +14,7 @@ logger.info("app starting")
 
 app = FastAPI(title="ProjectX")
 
-app.add_middleware(SessionMiddleware, secret_key="your-super-secret-session-key")
+app.add_middleware(SessionMiddleware, secret_key=EnvironmentVariables.MIDDLEWARE_SECRET_KEY)
 
 app.add_middleware(
     CORSMiddleware,
