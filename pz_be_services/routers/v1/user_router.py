@@ -112,14 +112,13 @@ GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
 FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_USER_URL
 
 @router.get("/login/github")
-def login():
+def github_login():
     params = {
         "client_id": GITHUB_CLIENT_ID,
         "redirect_uri": CLIENT_REDIRECT_URI,
         "scope": "read:user user:email",
     }
     query = "&".join([f"{k}={v}" for k, v in params.items()])
-    print(query)
     return RedirectResponse(f"{GITHUB_AUTHORIZE_URL}?{query}")
 
 
