@@ -183,6 +183,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             access_token = create_access_token(token_payload)
             user_info = user.username
             redirect_url = f"http://127.0.0.1:3000?access_token={access_token}&username={user_info}"
+            
             print(redirect_url)
 
             return RedirectResponse(redirect_url)
