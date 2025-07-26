@@ -16,6 +16,7 @@ from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from core.config import EnvironmentVariables
 import httpx
+from urllib.parse import urlencode
 
 
 router = APIRouter()
@@ -61,9 +62,6 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
 
 
 
-GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
-GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_ID
-GITHUB_REDIRECT_URI = EnvironmentVariables.GITHUB_REDIRECT_URI
 
 
 
@@ -114,43 +112,56 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail=str(e),
         )
 
-@router.get("/login/github" , status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-def login_with_github():
-    github_auth_url = (
-        "https://github.com/login/oauth/authorize"
-        f"?client_id={GITHUB_CLIENT_ID}"
-        f"&redirect_uri={GITHUB_REDIRECT_URI}"
-        "&scope=read:user user:email"
-    )
-    return RedirectResponse(github_auth_url)
+
+GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_ID
+REDIRECT_URI = EnvironmentVariables.GITHUB_REDIRECT_URI
+
+
+AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+TOKEN_URL     = "https://github.com/login/oauth/access_token"
+USER_API      = "https://api.github.com/user"
 
 
 
-@router.get("/login/github/callback", status_code=status.HTTP_202_ACCEPTED)
-async def github_callback(request: Request):
-    code = request.query_params.get("code") 
-    if not code:
-        return JSONResponse({"error": "Missing GitHub code"}, status_code=400)
-   
+
+
+
+
+
+@router.get("/login/github")
+def login():
+    params = {
+        "client_id": GITHUB_CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "scope": "read:user user:email",
+    }
+    query = "&".join([f"{k}={v}" for k, v in params.items()])
+    return RedirectResponse(f"{AUTHORIZE_URL}?{query}")
+
+@router.get("/auth/github/callback")
+async def github_callback(request: Request, code: str = None):
+    if code is None:
+        raise HTTPException(status_code=400, detail="No code provided")
+    # Exchange code for access token
     async with httpx.AsyncClient() as client:
-        token_resp = await client.post(
-            "https://github.com/login/oauth/access_token",
-            headers={"Accept": "application/json"},
-            data={
-                "client_id": GITHUB_CLIENT_ID,
-                "client_secret": GITHUB_CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": GITHUB_REDIRECT_URI,
-            },
-        )
+        headers = {"Accept": "application/json"}
+        data = {
+            "client_id": GITHUB_CLIENT_ID,
+            "client_secret": GITHUB_CLIENT_SECRET,
+            "code": code,
+            "redirect_uri": REDIRECT_URI,
+        }
+        token_resp = await client.post(TOKEN_URL, data=data, headers=headers)
         token_json = token_resp.json()
+        print(token_json)
         access_token = token_json.get("access_token")
-        if not access_token:
-            return JSONResponse(token_json, status_code=400)
-        # Retrieve user info
-        user_resp = await client.get(
-            "https://api.github.com/user",
-            headers={"Authorization": f"token {access_token}"}
-        )
+        if access_token is None:
+            raise HTTPException(status_code=400, detail="Failed to obtain access token")
+        # Get user info
+        headers.update({"Authorization": f"token {access_token}"})
+        user_resp = await client.get(USER_API, headers=headers)
         user_data = user_resp.json()
-    return JSONResponse(user_data)
+        print(user_data)
+    request.session["user"] = user_data
+    return RedirectResponse("/me")
