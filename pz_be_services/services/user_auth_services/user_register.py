@@ -29,3 +29,14 @@ class UserRegisterService:
         new_user = user.create(self.db, obj_in=user_create)
         create_password(self.db, user_obj.password, new_user.id)
         return new_user
+    
+
+
+    def create_user_for_github(self, user_obj: UserCreate):
+        user_create = UserBase( 
+        username=user_obj.username,
+        )
+        new_user = user.create(self.db, obj_in=user_create)
+        return new_user
+
+
