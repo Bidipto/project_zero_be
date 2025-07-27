@@ -11,11 +11,20 @@ from fastapi.responses import RedirectResponse
 from core.config import EnvironmentVariables
 import httpx
 from urllib.parse import urlencode
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 router = APIRouter()
 logger = get_logger("user")
 
+
+
+@router.get("/test")
+def test():
+    aal = os.getenv("SECRET_KEY")
+    return aal
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -119,6 +128,7 @@ def github_login():
         "scope": "read:user user:email",
     }
     query = "&".join([f"{k}={v}" for k, v in params.items()])
+    print(query)
     return RedirectResponse(f"{GITHUB_AUTHORIZE_URL}?{query}")
 
 
@@ -152,7 +162,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             register_service = UserRegisterService(db)
 
             logger.info("user service created")
-            user = register_service.check_user_exists(user_obj=userobj)
+            user = register_service.check_user_exists_email(user_obj=userobj)
 
             if not user:
                 user = register_service.create_user_for_github(userobj)
@@ -179,5 +189,9 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=str(e),
                 )
+
+
+
+
 
 

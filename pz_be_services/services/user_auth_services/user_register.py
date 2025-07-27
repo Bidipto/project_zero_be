@@ -14,9 +14,14 @@ class UserRegisterService:
 
     def check_user_exists(self, user_obj: UserBase):
         existing_user = user.get_by_username(self.db, username=user_obj.username)
-        existing_email = user.get_by_email(self.db, email=user_obj.email)
-        if existing_user or existing_email:
-            return existing_user or existing_email
+        if existing_user:
+            return existing_user
+        return None
+    
+    def check_user_exists_email(self, user_obj : UserBase):
+        existing_user = user.get_by_email(self.db, email=user_obj.email)
+        if existing_user:
+            return existing_user
         return None
 
     def create_user(self, user_obj: UserPassword):
