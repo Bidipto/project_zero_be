@@ -1,4 +1,6 @@
 .venv
 *.pyc
-*.log
+.logs
 *.db
+.vscode
+*.env

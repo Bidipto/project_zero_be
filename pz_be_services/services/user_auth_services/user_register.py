@@ -14,8 +14,9 @@ class UserRegisterService:
 
     def check_user_exists(self, user_obj: UserBase):
         existing_user = user.get_by_username(self.db, username=user_obj.username)
-        if existing_user:
-            return existing_user
+        existing_email = user.get_by_email(self.db, email=user_obj.email)
+        if existing_user or existing_email:
+            return existing_user or existing_email
         return None
 
     def create_user(self, user_obj: UserPassword):
@@ -29,3 +30,14 @@ class UserRegisterService:
         new_user = user.create(self.db, obj_in=user_create)
         create_password(self.db, user_obj.password, new_user.id)
         return new_user
+    
+
+
+    def create_user_for_github(self, user_obj: UserCreate):
+        user_create = UserBase( 
+        username=user_obj.username,
+        )
+        new_user = user.create(self.db, obj_in=user_create)
+        return new_user
+
+
