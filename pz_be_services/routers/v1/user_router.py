@@ -181,5 +181,3 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
                 )
 
 
-
-

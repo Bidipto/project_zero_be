@@ -5,11 +5,11 @@ import os
 def get_logger(name: str = "logger", db : bool = False) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    log_dir_path = os.path.join("pz_be_services\logs")
+    log_dir_path = os.path.join("pz_be_services", "logs")
 
     if not logger.handlers:
 
-        os.makedirs("pz_be_services\logs", exist_ok=True)
+        os.makedirs(log_dir_path, exist_ok=True)
 
         if db == True:
             filename = "db.log"
