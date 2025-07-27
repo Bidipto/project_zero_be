@@ -1,11 +1,7 @@
 import os
 class EnvironmentVariables:
    SQLALCHEMY_DATABASE_URL = "sqlite:///./ProjectX.db"
-<<<<<<< HEAD
-   SECRET_KEY = os.getenv("SECRET_KEY", "9usdfhjsuidfjsdifjsdifjsdifjsdopfksidjfisdjfsi90d")
-   ALGORITHM = os.getenv("ALGORITHM", "HS256")
-   ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-=======
+
    SECRET_KEY = os.getenv("SECRET_KEY")
    ALGORITHM = os.getenv("ALGORITHM")
    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES",30))
@@ -21,6 +17,6 @@ class EnvironmentVariables:
    FRONTEND_USER_URL ="http://127.0.0.1:3000"
 
    MIDDLEWARE_SECRET_KEY = os.getenv("MIDDLEWARE_SECRET_KEY")
->>>>>>> 425defa7df55a072f50963e0bcde2bd21386012c
+
 
 
