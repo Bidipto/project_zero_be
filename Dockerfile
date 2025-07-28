@@ -49,4 +49,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the application.
-CMD fastapi run pz_be_services/main.py --host 0.0.0.0 --port 8002
+CMD fastapi run pz_be_services/main.py --host 0.0.0.0 --port 8000
