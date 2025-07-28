@@ -10,7 +10,7 @@ from core.logger import get_logger
 from fastapi.responses import RedirectResponse
 from core.config import EnvironmentVariables
 import httpx
-from urllib.parse import urlencode
+from urllib.parse import urljoin
 import os
 from dotenv import load_dotenv
 
@@ -112,7 +112,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = EnvironmentVariables.FRONTEND_URL+EnvironmentVariables.CLIENT_REDIRECT_URI
+FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.FRONTEND_URL,EnvironmentVariables.CLIENT_REDIRECT_URI)
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
@@ -146,7 +146,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             "client_id": GITHUB_CLIENT_ID,
             "client_secret": GITHUB_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": CLIENT_REDIRECT_URI,
+            "redirect_uri": FULL_CLIENT_REDIRECT_URI,
         }
         token_resp = await client.post(GITHUB_TOKEN_URL, data=data, headers=headers)
         token_json = token_resp.json()
