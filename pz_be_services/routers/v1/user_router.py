@@ -11,11 +11,20 @@ from fastapi.responses import RedirectResponse
 from core.config import EnvironmentVariables
 import httpx
 from urllib.parse import urlencode
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 router = APIRouter()
 logger = get_logger("user")
 
+
+
+@router.get("/test")
+def test():
+    aal = os.getenv("SECRET_KEY")
+    return aal
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -111,6 +120,9 @@ GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
 
 FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_USER_URL
 
+#v1/user/login/github 
+
+
 @router.get("/login/github")
 def github_login():
     params = {
@@ -179,5 +191,9 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=str(e),
                 )
+
+
+
+
 
 

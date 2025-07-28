@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class EnvironmentVariables:
    SQLALCHEMY_DATABASE_URL = "sqlite:///./ProjectX.db"
 

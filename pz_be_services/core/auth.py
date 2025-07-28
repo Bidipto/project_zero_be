@@ -17,7 +17,6 @@ def create_access_token(payload: Dict[str, Any], expires_in_minutes: int = ACCES
     payload = payload.copy()
     expire = datetime.utcnow() + timedelta(minutes=expires_in_minutes)
     payload["exp"] = expire
-
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
 
