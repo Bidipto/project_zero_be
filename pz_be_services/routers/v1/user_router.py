@@ -112,7 +112,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.FRONTEND_URL,EnvironmentVariables.CLIENT_REDIRECT_URI)
+FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.CLIENT_REDIRECT_URI)
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
