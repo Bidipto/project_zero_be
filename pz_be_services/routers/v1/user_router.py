@@ -164,7 +164,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             register_service = UserRegisterService(db)
 
             logger.info("user service created")
-            user = register_service.check_user_exists_email(user_obj=userobj)
+            user = register_service.check_user_exists(user_obj=userobj)
 
             if not user:
                 user = register_service.create_user_for_github(userobj)
