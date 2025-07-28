@@ -112,13 +112,13 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-CLIENT_REDIRECT_URI = EnvironmentVariables.CLIENT_REDIRECT_URI
+FULL_CLIENT_REDIRECT_URI = EnvironmentVariables.FRONTEND_URL+EnvironmentVariables.CLIENT_REDIRECT_URI
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
 GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
 
-FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_USER_URL
+FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_URL
 
 #v1/user/login/github 
 
@@ -127,7 +127,7 @@ FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_USER_URL
 def github_login():
     params = {
         "client_id": GITHUB_CLIENT_ID,
-        "redirect_uri": CLIENT_REDIRECT_URI,
+        "redirect_uri": FULL_CLIENT_REDIRECT_URI,
         "scope": "read:user user:email",
     }
     query = "&".join([f"{k}={v}" for k, v in params.items()])
