@@ -1,6 +1,6 @@
 .venv
 *.pyc
-.logs
+*.log
 *.db
 .vscode
 *.env

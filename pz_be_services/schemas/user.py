@@ -9,7 +9,6 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = Field(None, max_length=100)
     is_active: bool = True
-    
 
 
 # Schema for creating a user
