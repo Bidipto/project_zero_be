@@ -11,7 +11,7 @@ class EnvironmentVariables:
    GITHUB_CLIENT_ID=os.getenv("GITHUB_CLIENT_ID")
    GITHUB_CLIENT_SECRET=os.getenv("GITHUB_CLIENT_SECRET")
    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-   BACKEND_URL = os.getenv("BACKEND_URL")
+   BACKEND_URL = os.getenv("BACKEND_URL" , "http://localhost:8000")
    CLIENT_REDIRECT_URI = "/v1/user/auth/github/callback"
    GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
    GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
