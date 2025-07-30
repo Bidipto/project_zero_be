@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 
 # logger implement kor ekhane
 logger.info("DB: Creating database engine")
+print("DB: Creating database at ", EnvironmentVariables.SQLALCHEMY_DATABASE_URL)
 
 engine = create_engine(
     EnvironmentVariables.SQLALCHEMY_DATABASE_URL,
