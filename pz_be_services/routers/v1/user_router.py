@@ -112,13 +112,14 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.CLIENT_REDIRECT_URI)
+FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.GITHUB_CLIENT_REDIRECT_URI)
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
 GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
 
 FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_URL
+
 
 #v1/user/login/github 
 
@@ -178,8 +179,6 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             access_token = create_access_token(token_payload)
             user_info = user.username
             redirect_url = f"{FRONTEND_REDIRECT_URL}?access_token={access_token}&username={user_info}"
-            
-            print(redirect_url)
 
             return RedirectResponse(redirect_url)
 
@@ -194,6 +193,110 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
 
 
 
+#---------------------------login with google-----------------------------------------
+
+GOOGLE_CLIENT_ID = EnvironmentVariables.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = EnvironmentVariables.GOOGLE_CLIENT_SECRET
+FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL, EnvironmentVariables.GOOGLE_CLIENT_REDIRECT_URI)
+
+
+GOOGLE_AUTHORIZE_URL = EnvironmentVariables.GOOGLE_AUTHORIZE_URL
+GOOGLE_TOKEN_URL = EnvironmentVariables.GOOGLE_TOKEN_URL
+GOOGLE_USER_API = EnvironmentVariables.GOOGLE_USER_API
+
+
+# /v1/user/login/google
+@router.get("/login/google")
+def google_login():
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",    
+        "prompt": "consent"
+    }
+    query = "&".join([f"{k}={v}" for k, v in params.items()])
+    return RedirectResponse(f"{GOOGLE_AUTHORIZE_URL}?{query}")
 
 
 
+@router.get("/auth/google/callback")
+async def google_callback(code: str = None, db: Session = Depends(get_db)):
+    if code is None:
+        raise HTTPException(status_code=400, detail="No code provided")
+    
+    # Exchange code for access token
+    async with httpx.AsyncClient() as client:
+        data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+            "grant_type": "authorization_code"
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        token_resp = await client.post(GOOGLE_TOKEN_URL, data=data, headers=headers)
+        token_json = token_resp.json()
+        
+        access_token = token_json.get("access_token")
+        if access_token is None:
+            raise HTTPException(status_code=400, detail="Failed to obtain access token")
+        
+        # Get Google user info
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_resp = await client.get(GOOGLE_USER_API, headers=headers)
+        user_data = user_resp.json()
+        
+        try:
+            register_service = UserRegisterService(db)
+            logger.info("user service created")
+            
+            # Extract email
+            email = user_data.get("email")
+            
+            # Generate a username
+            generated_username = register_service.generate_username_from_google_data(user_data)
+            
+            # Create user object with generated username and separate email ---- username goes into username column...not email :(
+            userobj = UserCreate(
+                username=generated_username,  
+                email=email                   
+            )
+            
+            # Check if user already exists by username or email
+            user = register_service.check_user_exists(user_obj=userobj)
+            if not user and email:
+                user = register_service.check_user_exists_email(user_obj=userobj)
+            
+            if not user:
+                user = register_service.create_user_for_google(userobj)
+            
+            logger.debug(user)
+            
+            # Create JWT 
+            token_payload = {
+                "sub": str(user.id),
+                "username": user.username,
+            }
+            access_token = create_access_token(token_payload)
+            user_info = user.username
+            redirect_url = f"{FRONTEND_REDIRECT_URL}?access_token={access_token}&username={user_info}"
+            
+            
+            return RedirectResponse(redirect_url)
+            
+        except ValueError as e:
+            logger.error(f"Username generation failed: {str(e)}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Unable to create user account with provided Google data"
+            )
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger.exception(str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e),
+            )
