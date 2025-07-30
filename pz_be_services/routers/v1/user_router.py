@@ -112,7 +112,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.GITHUB_CLIENT_REDIRECT_URI)
+GITHUB_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.GITHUB_CLIENT_REDIRECT_URI)
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
@@ -128,7 +128,7 @@ FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_URL
 def github_login():
     params = {
         "client_id": GITHUB_CLIENT_ID,
-        "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+        "redirect_uri": GITHUB_CLIENT_REDIRECT_URI,
         "scope": "read:user user:email",
     }
     query = "&".join([f"{k}={v}" for k, v in params.items()])
@@ -147,7 +147,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             "client_id": GITHUB_CLIENT_ID,
             "client_secret": GITHUB_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+            "redirect_uri": GITHUB_CLIENT_REDIRECT_URI,
         }
         token_resp = await client.post(GITHUB_TOKEN_URL, data=data, headers=headers)
         token_json = token_resp.json()
