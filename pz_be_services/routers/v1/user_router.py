@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from services.user_auth_services.user_register import UserRegisterService
+from services.user_auth_services.user_list import UserListService
 from db.database import get_db
 from core.password import verify_password
-from schemas.user import  UserLogin, UserPassword,  UserCreate
-from core.auth import create_access_token
-from db.crud.crud_password import  get_password_by_user_id
+from schemas.user import UserLogin, UserPassword, UserCreate, UsernamesListResponse
+from core.auth import create_access_token, get_current_user
+from db.crud.crud_password import get_password_by_user_id
 from core.logger import get_logger
 from fastapi.responses import RedirectResponse
 from core.config import EnvironmentVariables
@@ -13,12 +14,12 @@ import httpx
 from urllib.parse import urljoin
 import os
 from dotenv import load_dotenv
+from typing import Dict, Any
 
 load_dotenv()
 
 router = APIRouter()
 logger = get_logger("user")
-
 
 
 @router.get("/test")
@@ -42,15 +43,14 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User already exists",
             )
-        
+
         user = register_service.create_user(user)
-        
+
         logger.info(f"User registered: {user.username}")
         response = {
             "id": user.id,
             "username": user.username,
             "email": user.email,
-          
         }
         return response
     except HTTPException as e:
@@ -58,13 +58,12 @@ def register(user: UserPassword, db: Session = Depends(get_db)):
     except Exception as e:
         logger.exception(str(e))
         raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e),
-            )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
-
-@router.post("/login",  status_code=status.HTTP_202_ACCEPTED)
+@router.post("/login", status_code=status.HTTP_202_ACCEPTED)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
         register_service = UserRegisterService(db)
@@ -74,10 +73,12 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User doesn't exxists, please sign-up",
             )
-      
+
         user_password_obj = get_password_by_user_id(db, db_user.id)
-        
-        if not user_password_obj or not verify_password(user.password, user_password_obj.hashed_password):
+
+        if not user_password_obj or not verify_password(
+            user.password, user_password_obj.hashed_password
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid username or password",
@@ -95,7 +96,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             "username": db_user.username,
             "email": db_user.email,
             "access_token": access_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
         return response
     except HTTPException as e:
@@ -108,11 +109,13 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         )
 
 
-#------------------------Login with Github----------------------------------------
+# ------------------------Login with Github----------------------------------------
 
 GITHUB_CLIENT_ID = EnvironmentVariables.GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET = EnvironmentVariables.GITHUB_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL,EnvironmentVariables.CLIENT_REDIRECT_URI)
+FULL_CLIENT_REDIRECT_URI = urljoin(
+    EnvironmentVariables.BACKEND_URL, EnvironmentVariables.CLIENT_REDIRECT_URI
+)
 
 GITHUB_AUTHORIZE_URL = EnvironmentVariables.GITHUB_AUTHORIZE_URL
 GITHUB_TOKEN_URL = EnvironmentVariables.GITHUB_TOKEN_URL
@@ -120,7 +123,7 @@ GITHUB_USER_API = EnvironmentVariables.GITHUB_USER_API
 
 FRONTEND_REDIRECT_URL = EnvironmentVariables.FRONTEND_URL
 
-#v1/user/login/github 
+# v1/user/login/github
 
 
 @router.get("/login/github")
@@ -134,9 +137,8 @@ def github_login():
     return RedirectResponse(f"{GITHUB_AUTHORIZE_URL}?{query}")
 
 
-
 @router.get("/auth/github/callback")
-async def github_callback( code: str = None, db: Session = Depends(get_db)):
+async def github_callback(code: str = None, db: Session = Depends(get_db)):
     if code is None:
         raise HTTPException(status_code=400, detail="No code provided")
     # Exchange code for access token
@@ -156,7 +158,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
         # Get user info
         headers.update({"Authorization": f"token {access_token}"})
         user_resp = await client.get(GITHUB_USER_API, headers=headers)
-        user_data = user_resp.json() 
+        user_data = user_resp.json()
 
         userobj = UserCreate(username=user_data.get("login"))
         # register the info in db
@@ -178,7 +180,7 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
             access_token = create_access_token(token_payload)
             user_info = user.username
             redirect_url = f"{FRONTEND_REDIRECT_URL}?access_token={access_token}&username={user_info}"
-            
+
             print(redirect_url)
 
             return RedirectResponse(redirect_url)
@@ -188,12 +190,36 @@ async def github_callback( code: str = None, db: Session = Depends(get_db)):
         except Exception as e:
             logger.exception(str(e))
             raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=str(e),
-                )
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e),
+            )
 
 
+@router.get(
+    "/usernames", response_model=UsernamesListResponse, status_code=status.HTTP_200_OK
+)
+def get_all_usernames(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get a list of all usernames from active users.
+    Requires authentication.
+    """
+    try:
+        logger.info(f"User {current_user.get('username')} requested usernames list")
 
+        user_list_service = UserListService(db)
+        usernames_response = user_list_service.get_all_usernames()
 
+        logger.info(f"Successfully returned {usernames_response.total_count} usernames")
+        return usernames_response
 
-
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error retrieving usernames: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while retrieving usernames",
+        )

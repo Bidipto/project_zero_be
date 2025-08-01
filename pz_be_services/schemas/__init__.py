@@ -1,40 +1,59 @@
 from .user import (
-    UserBase, 
-    UserCreate, 
+    UserBase,
+    UserCreate,
     UserUpdate,
-    UserPassword, 
-    UserResponse, 
-    UserInChat, 
-    UserWithStats
+    UserPassword,
+    UserResponse,
+    UserInChat,
+    UserWithStats,
+    UsernamesListResponse,
 )
 from .chat import (
-    ChatBase, 
-    ChatCreate, 
-    ChatUpdate, 
-    ChatResponse, 
-    ChatWithParticipants, 
-    ChatWithMessages, 
-    ChatListItem, 
-    ChatParticipantUpdate
+    ChatBase,
+    ChatCreate,
+    ChatUpdate,
+    ChatResponse,
+    ChatWithParticipants,
+    ChatWithMessages,
+    ChatListItem,
+    ChatParticipantUpdate,
 )
 from .message import (
-    MessageBase, 
-    MessageCreate, 
-    MessageUpdate, 
-    MessageResponse, 
-    MessageWithSender, 
-    MessageInChat, 
-    MessageReadUpdate
+    MessageBase,
+    MessageCreate,
+    MessageUpdate,
+    MessageResponse,
+    MessageWithSender,
+    MessageInChat,
+    MessageReadUpdate,
 )
 
 # __all__ is used to define the public interface of a module. When you use from <module> import *, only the names listed in __all__ will be imported.
 __all__ = [
     # User schemas
-    "UserBase", "UserCreate", "UserUpdate", "UserResponse", "UserInChat", "UserWithStats", "UserPassword"
+    "UserBase",
+    "UserCreate",
+    "UserUpdate",
+    "UserResponse",
+    "UserInChat",
+    "UserWithStats",
+    "UserPassword",
+    "UsernamesListResponse",
     # Chat schemas
-    "ChatBase", "ChatCreate", "ChatUpdate", "ChatResponse", "ChatWithParticipants", 
-    "ChatWithMessages", "ChatListItem", "ChatParticipantUpdate",
+    "ChatBase",
+    "ChatCreate",
+    "ChatUpdate",
+    "ChatResponse",
+    "ChatWithParticipants",
+    "ChatWithMessages",
+    "ChatListItem",
+    "ChatParticipantUpdate",
     # Message schemas
-    "MessageBase", "MessageCreate", "MessageUpdate", "MessageResponse", "MessageWithSender", 
-    "MessageInChat", "MessageReadUpdate"
+    "MessageBase",
+    "MessageCreate",
+    "MessageUpdate",
+    "MessageResponse",
+    "MessageWithSender",
+    "MessageInChat",
+    "MessageReadUpdate",
 ]

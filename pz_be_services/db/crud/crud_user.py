@@ -6,6 +6,7 @@ from .base import CRUDBase
 from ..models import User
 from schemas.user import UserCreate, UserUpdate
 
+
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_username(self, db: Session, *, username: str) -> Optional[User]:
         """Get user by username"""
@@ -15,25 +16,31 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         """Get user by email"""
         return db.query(User).filter(User.email == email).first()
 
-    def get_by_username_or_email(self, db: Session, *, identifier: str) -> Optional[User]:
+    def get_by_username_or_email(
+        self, db: Session, *, identifier: str
+    ) -> Optional[User]:
         """Get user by username or email"""
-        return db.query(User).filter(
-            or_(User.username == identifier, User.email == identifier)
-        ).first()
+        return (
+            db.query(User)
+            .filter(or_(User.username == identifier, User.email == identifier))
+            .first()
+        )
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         """Create user with additional validation"""
         # Check if username already exists
         if self.get_by_username(db, username=obj_in.username):
             raise ValueError("Username already exists")
-        
+
         # Check if email already exists (if provided)
         if obj_in.email and self.get_by_email(db, email=obj_in.email):
             raise ValueError("Email already exists")
-        
-        return super().create(db,obj_in= obj_in)
 
-    def get_active_users(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[User]:
+        return super().create(db, obj_in=obj_in)
+
+    def get_active_users(
+        self, db: Session, *, skip: int = 0, limit: int = 100
+    ) -> List[User]:
         """Get all active users"""
         return db.query(User).filter(User.is_active).offset(skip).limit(limit).all()
 
@@ -55,20 +62,35 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             db.refresh(user)
         return user
 
-    def search_users(self, db: Session, *, query: str, skip: int = 0, limit: int = 100) -> List[User]:
+    def search_users(
+        self, db: Session, *, query: str, skip: int = 0, limit: int = 100
+    ) -> List[User]:
         """Search users by username, email, or full_name"""
         search_pattern = f"%{query}%"
-        return db.query(User).filter(
-            or_(
-                User.username.ilike(search_pattern),
-                User.email.ilike(search_pattern),
-                User.full_name.ilike(search_pattern)
+        return (
+            db.query(User)
+            .filter(
+                or_(
+                    User.username.ilike(search_pattern),
+                    User.email.ilike(search_pattern),
+                    User.full_name.ilike(search_pattern),
+                )
             )
-        ).filter(User.is_active).offset(skip).limit(limit).all()
+            .filter(User.is_active)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get_user_chats(self, db: Session, *, user_id: int) -> List:
         """Get all chats for a user"""
         user = self.get(db, id=user_id)
         return user.chats if user else []
+
+    def get_all_usernames(self, db: Session) -> List[str]:
+        """Get all usernames from active users"""
+        users = db.query(User.username).filter(User.is_active).all()
+        return [user.username for user in users]
+
 
 user = CRUDUser(User)
