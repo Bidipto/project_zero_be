@@ -16,12 +16,17 @@ class UserCreate(UserBase):
     username: str = Field(..., min_length=3, max_length=50)
     email: Optional[EmailStr] = None
 
+
 class UserCreateReq(UserCreate):
     pass
 
+
 # Schema class for user password
 class UserPassword(UserCreate):
-    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    password: str = Field(
+        ..., min_length=8, description="Password must be at least 8 characters"
+    )
+
 
 # Schema for updating a user
 class UserUpdate(BaseModel):
@@ -61,3 +66,9 @@ class UserWithStats(UserResponse):
 class UserLogin(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=128)
+
+
+# Schema for usernames list response
+class UsernamesListResponse(BaseModel):
+    usernames: List[str]
+    total_count: int
