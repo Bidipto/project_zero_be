@@ -12,7 +12,12 @@ class ChatBase(BaseModel):
     is_active: bool = True
 
 
-# Schema for creating a chat
+# Schema for creating a chat (without participants for model creation)
+class ChatCreateModel(ChatBase):
+    pass
+
+
+# Schema for creating a chat (with participants for API)
 class ChatCreate(ChatBase):
     participant_ids: List[int] = Field(..., min_items=2)
 
@@ -62,3 +67,19 @@ class ChatListItem(BaseModel):
 # Schema for adding/removing participants
 class ChatParticipantUpdate(BaseModel):
     participant_ids: List[int] = Field(..., min_items=1)
+
+
+# Schema for creating private chat request
+class PrivateChatRequest(BaseModel):
+    other_username: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        description="Username of the user to chat with",
+    )
+
+
+# Schema for private chat list response
+class PrivateChatListResponse(BaseModel):
+    chats: List[ChatWithParticipants]
+    total_count: int
