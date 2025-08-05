@@ -5,12 +5,12 @@ from datetime import datetime, timezone
 
 from .base import CRUDBase
 from ..models import Chat, User, Message
-from schemas.chat import ChatCreate, ChatUpdate
+from schemas.chat import ChatCreate, ChatUpdate, ChatCreateModel
 
 
-class CRUDChat(CRUDBase[Chat, ChatCreate, ChatUpdate]):
+class CRUDChat(CRUDBase[Chat, ChatCreateModel, ChatUpdate]):
     def create_with_participants(
-        self, db: Session, *, obj_in: ChatCreate, participant_ids: List[int]
+        self, db: Session, *, obj_in: ChatCreateModel, participant_ids: List[int]
     ) -> Chat:
         """Create a chat with participants"""
         # Create the chat
