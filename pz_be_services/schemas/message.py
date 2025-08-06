@@ -61,6 +61,16 @@ class MessageReadUpdate(BaseModel):
     message_ids: List[int] = Field(..., min_items=1)
 
 
+# Schema for sending a message (request)
+class MessageSendRequest(BaseModel):
+    content: str = Field(
+        ..., min_length=1, max_length=4000, description="Message content"
+    )
+    message_type: str = Field(
+        default="text", description="Type of message (text, image, file, etc.)"
+    )
+
+
 # Schema for bulk message operations
 class MessageBulkDelete(BaseModel):
     message_ids: List[int] = Field(..., min_items=1)
@@ -79,3 +89,10 @@ class MessageSearchParams(BaseModel):
     message_type: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
+
+
+# Schema for message list response
+class MessageListResponse(BaseModel):
+    messages: List[MessageWithSender]
+    total_count: int
+    has_more: bool

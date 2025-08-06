@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
-from db.crud import chat, user
+from db.crud import chat, user, message
 from schemas.chat import ChatWithParticipants, ChatCreateModel
 from schemas.user import UserInChat
+from schemas.message import MessageWithSender, MessageListResponse
 from core.logger import get_logger
 from typing import List
 from fastapi import HTTPException, status
@@ -166,3 +167,82 @@ class PrivateChatService:
             last_message_at=chat_obj.last_message_at,
             participants=participants,
         )
+
+    def get_chat_messages(
+        self,
+        chat_id: int,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 50,
+        order: str = "asc",
+    ) -> MessageListResponse:
+        """
+        Get messages from a specific chat.
+        Ensures the user is a participant in the chat.
+        """
+        try:
+            # Verify chat exists and user is a participant
+            chat_obj = chat.get(self.db, id=chat_id)
+            if not chat_obj:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+                )
+
+            if not chat.is_participant(self.db, chat_id=chat_id, user_id=user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not a participant in this chat",
+                )
+
+            # Get messages using CRUD
+            messages = message.get_chat_messages(
+                self.db, chat_id=chat_id, skip=skip, limit=limit + 1, order=order
+            )
+
+            # Check if there are more messages
+            has_more = len(messages) > limit
+            if has_more:
+                messages = messages[:limit]  # Remove the extra message
+
+            # Format messages with sender info
+            formatted_messages = []
+            for msg in messages:
+                sender_info = UserInChat(
+                    id=msg.sender.id,
+                    username=msg.sender.username,
+                    full_name=msg.sender.full_name,
+                    is_active=msg.sender.is_active,
+                )
+
+                formatted_message = MessageWithSender(
+                    id=msg.id,
+                    chat_id=msg.chat_id,
+                    sender_id=msg.sender_id,
+                    content=msg.content,
+                    message_type=msg.message_type,
+                    timestamp=msg.timestamp,
+                    is_read=msg.is_read,
+                    is_edited=msg.is_edited,
+                    edited_at=msg.edited_at,
+                    sender=sender_info,
+                )
+                formatted_messages.append(formatted_message)
+
+            logger.info(
+                f"Retrieved {len(formatted_messages)} messages from chat {chat_id} for user {user_id}"
+            )
+
+            return MessageListResponse(
+                messages=formatted_messages,
+                total_count=len(formatted_messages),
+                has_more=has_more,
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving messages from chat {chat_id}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error retrieving chat messages",
+            )
