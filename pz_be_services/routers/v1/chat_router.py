@@ -1,12 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from sqlalchemy.orm import Session
 from services.chat_services.private_chat import PrivateChatService
+from services.chat_services.message_service import MessageService
 from db.database import get_db
 from schemas.chat import (
     PrivateChatRequest,
     ChatWithParticipants,
     PrivateChatListResponse,
 )
+from schemas.message import MessageListResponse, MessageSendRequest, MessageWithSender
 from core.auth import get_current_user
 from core.logger import get_logger
 from typing import Dict, Any
@@ -132,4 +134,180 @@ def get_private_chat_by_id(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while retrieving private chat",
         )
-    
+
+
+# Message endpoints for chats
+@router.get(
+    "/{chat_id}/messages",
+    response_model=MessageListResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_chat_messages(
+    chat_id: int,
+    skip: int = Query(0, ge=0, description="Number of messages to skip"),
+    limit: int = Query(
+        50, ge=1, le=100, description="Maximum number of messages to return"
+    ),
+    order: str = Query(
+        "asc",
+        regex="^(asc|desc)$",
+        description="Order of messages: 'asc' (oldest first) or 'desc' (newest first)",
+    ),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get messages from a chat.
+    User must be a participant in the chat.
+    Requires authentication.
+    """
+    try:
+        current_user_id = int(current_user.get("sub"))
+        logger.info(
+            f"User {current_user.get('username')} requesting messages from chat {chat_id}"
+        )
+
+        message_service = MessageService(db)
+        messages_response = message_service.get_chat_messages(
+            chat_id=chat_id,
+            user_id=current_user_id,
+            skip=skip,
+            limit=limit,
+            order=order,
+        )
+
+        logger.info(
+            f"Successfully returned {len(messages_response.messages)} messages from chat {chat_id} for user {current_user.get('username')}"
+        )
+        return messages_response
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error retrieving messages from chat {chat_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while retrieving chat messages",
+        )
+
+
+@router.post(
+    "/{chat_id}/messages/mark-read",
+    status_code=status.HTTP_200_OK,
+)
+def mark_messages_as_read(
+    chat_id: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Mark all unread messages in a chat as read for the authenticated user.
+    User must be a participant in the chat.
+    Requires authentication.
+    """
+    try:
+        current_user_id = int(current_user.get("sub"))
+        logger.info(
+            f"User {current_user.get('username')} marking messages as read in chat {chat_id}"
+        )
+
+        message_service = MessageService(db)
+        marked_count = message_service.mark_messages_as_read(
+            chat_id=chat_id, user_id=current_user_id
+        )
+
+        logger.info(
+            f"Successfully marked {marked_count} messages as read in chat {chat_id} for user {current_user.get('username')}"
+        )
+        return {"marked_count": marked_count, "message": "Messages marked as read"}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error marking messages as read in chat {chat_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while marking messages as read",
+        )
+
+
+@router.get(
+    "/{chat_id}/messages/unread-count",
+    status_code=status.HTTP_200_OK,
+)
+def get_unread_message_count(
+    chat_id: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the count of unread messages in a chat for the authenticated user.
+    User must be a participant in the chat.
+    Requires authentication.
+    """
+    try:
+        current_user_id = int(current_user.get("sub"))
+        logger.info(
+            f"User {current_user.get('username')} requesting unread count for chat {chat_id}"
+        )
+
+        message_service = MessageService(db)
+        unread_count = message_service.get_unread_count(
+            chat_id=chat_id, user_id=current_user_id
+        )
+
+        logger.info(
+            f"User {current_user.get('username')} has {unread_count} unread messages in chat {chat_id}"
+        )
+        return {"unread_count": unread_count}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error getting unread count for chat {chat_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while getting unread message count",
+        )
+
+
+@router.post(
+    "/{chat_id}/messages",
+    response_model=MessageWithSender,
+    status_code=status.HTTP_201_CREATED,
+)
+def send_message_to_chat(
+    chat_id: int,
+    message_request: MessageSendRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Send a message to a chat.
+    User must be a participant in the chat.
+    Requires authentication.
+    """
+    try:
+        current_user_id = int(current_user.get("sub"))
+        logger.info(
+            f"User {current_user.get('username')} sending message to chat {chat_id}"
+        )
+
+        message_service = MessageService(db)
+        message_response = message_service.send_message(
+            chat_id=chat_id, user_id=current_user_id, message_request=message_request
+        )
+
+        logger.info(
+            f"Successfully sent message {message_response.id} to chat {chat_id} from user {current_user.get('username')}"
+        )
+        return message_response
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error sending message to chat {chat_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while sending message",
+        )
