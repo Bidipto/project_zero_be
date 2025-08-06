@@ -200,7 +200,7 @@ async def github_callback(code: str = None, db: Session = Depends(get_db)):
 
 GOOGLE_CLIENT_ID = EnvironmentVariables.GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET = EnvironmentVariables.GOOGLE_CLIENT_SECRET
-FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL, EnvironmentVariables.GOOGLE_CLIENT_REDIRECT_URI)
+GOOGLE_FULL_CLIENT_REDIRECT_URI = urljoin(EnvironmentVariables.BACKEND_URL, EnvironmentVariables.GOOGLE_CLIENT_REDIRECT_URI)
 
 
 GOOGLE_AUTHORIZE_URL = EnvironmentVariables.GOOGLE_AUTHORIZE_URL
@@ -213,7 +213,7 @@ GOOGLE_USER_API = EnvironmentVariables.GOOGLE_USER_API
 def google_login():
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+        "redirect_uri": GOOGLE_FULL_CLIENT_REDIRECT_URI,
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "offline",    
@@ -235,7 +235,7 @@ async def google_callback(code: str = None, db: Session = Depends(get_db)):
             "code": code,
             "client_id": GOOGLE_CLIENT_ID,
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": FULL_CLIENT_REDIRECT_URI,
+            "redirect_uri": GOOGLE_FULL_CLIENT_REDIRECT_URI,
             "grant_type": "authorization_code"
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
