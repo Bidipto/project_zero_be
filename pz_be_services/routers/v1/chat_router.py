@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from services.chat_services.private_chat import PrivateChatService
 from services.chat_services.message_service import MessageService
+from services.chat_services.connection_manager import ConnectionManager
 from db.database import get_db
 from schemas.chat import (
     PrivateChatRequest,
@@ -9,12 +10,13 @@ from schemas.chat import (
     PrivateChatListResponse,
 )
 from schemas.message import MessageListResponse, MessageSendRequest, MessageWithSender
-from core.auth import get_current_user
+from core.auth import get_current_user, verify_access_token
 from core.logger import get_logger
 from typing import Dict, Any
 
 router = APIRouter()
 logger = get_logger("chat")
+connection_manager = ConnectionManager()
 
 
 @router.post(
@@ -276,7 +278,7 @@ def get_unread_message_count(
     response_model=MessageWithSender,
     status_code=status.HTTP_201_CREATED,
 )
-def send_message_to_chat(
+async def send_message_to_chat(
     chat_id: int,
     message_request: MessageSendRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
@@ -293,8 +295,8 @@ def send_message_to_chat(
             f"User {current_user.get('username')} sending message to chat {chat_id}"
         )
 
-        message_service = MessageService(db)
-        message_response = message_service.send_message(
+        message_service = MessageService(db, connection_manager)
+        message_response = await message_service.send_message(
             chat_id=chat_id, user_id=current_user_id, message_request=message_request
         )
 
@@ -311,3 +313,48 @@ def send_message_to_chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while sending message",
         )
+
+
+@router.websocket("/ws/{chat_id}")
+async def websocket_endpoint(websocket: WebSocket, chat_id: int):
+    # 1. Authenticate the user from the token in the subprotocol.
+    # token = websocket.scope.get("subprotocols", [])
+    # logger.info(f"WebSocket connection attempt for chat {chat_id} with subprotocols: {token}")
+
+    # if not token:
+    #     logger.warning(f"Closing WebSocket connection for chat {chat_id}: Missing token.")
+    #     await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Missing token")
+    #     return
+
+    # try:
+        # payload = verify_access_token(token[0])
+        # current_user_id = int(payload.get("sub"))
+        # username = payload.get("username", "Anonymous")
+        # logger.info(f"WebSocket connection authenticated for user {current_user_id} ({username}) in chat {chat_id}")
+
+    # except Exception as e:
+    # logger.error(f"WebSocket authentication failed for chat {chat_id}: {e}", exc_info=True)
+    # await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=f"Invalid token: {e}")
+    # return\
+    
+    current_user_id = 7
+    username = 'testuser_ws_1'
+
+    # 2. Connect the user to the chat room.
+    await connection_manager.connect(websocket, chat_id)
+
+    try:
+        # 3. Echo messages back to the chat room.
+        while True:
+            data = await websocket.receive_text()
+            logger.info(f"Received message in chat {chat_id} from user {current_user_id}: {data}")
+            message_to_broadcast = f"{username}: {data}"
+            await connection_manager.broadcast(message_to_broadcast, chat_id)
+
+    except WebSocketDisconnect:
+        logger.info(f"User {current_user_id} disconnected from chat {chat_id}")
+        connection_manager.disconnect(websocket, chat_id)
+        await connection_manager.broadcast(f"User {username} has left the chat.", chat_id)
+    except Exception as e:
+        logger.error(f"An unexpected error occurred in WebSocket for chat {chat_id}: {e}", exc_info=True)
+        connection_manager.disconnect(websocket, chat_id)
