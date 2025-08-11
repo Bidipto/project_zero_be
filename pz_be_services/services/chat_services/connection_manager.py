@@ -100,45 +100,37 @@ class ConnectionManager:
         Returns the ID of the other user, or None if not found.
         """
         try:
-            # Get a database session
-            db = next(get_db())
+            with next(get_db()) as db:
+                # Query the chat and its participants
+                chat = db.query(Chat).filter(Chat.id == chat_id).first()
 
-            # Query the chat and its participants
-            chat = db.query(Chat).filter(Chat.id == chat_id).first()
+                if not chat:
+                    return None
 
-            if not chat:
+                # For private chats, there should be exactly 2 participants
+                if chat.chat_type == "private" and len(chat.participants) == 2:
+                    for participant in chat.participants:
+                        if participant.id != user_id:
+                            return participant.id
+
+                # For group chats, we might want different logic
+                # For now, returning None for group chats
                 return None
-
-            # For private chats, there should be exactly 2 participants
-            if chat.chat_type == "private" and len(chat.participants) == 2:
-                for participant in chat.participants:
-                    if participant.id != user_id:
-                        return participant.id
-
-            # For group chats, we might want different logic
-            # For now, returning None for group chats
-            return None
-
         except Exception as e:
-            print(f"Error getting other user in chat {chat_id}: {e}")
+            logger.error(f"Error getting other user in chat {chat_id}: {e}")
             return None
-        finally:
-            if "db" in locals():
-                db.close()
+        
 
     def get_username_by_id(self, user_id: int) -> Optional[str]:
         """
         Get username by user_id using existing design.
         """
         try:
-            db = next(get_db())
-            return crud_user.get_username_by_id(db, user_id=user_id)
+            with next(get_db()) as db:
+                return crud_user.get_username_by_id(db, user_id=user_id)
         except Exception as e:
             logger.error(f"Error getting username for user {user_id}: {e}")
             return None
-        finally:
-            if "db" in locals():
-                db.close()
 
     def get_connection_stats(self) -> dict:
         """
