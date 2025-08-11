@@ -259,10 +259,6 @@ class MessageService:
                 f"Successfully sent message {new_message.id} to chat {chat_id} from user {user_id}"
             )
 
-            await self.connection_manager.broadcast(
-                message_response.model_dump_json(), chat_id
-            )
-
             return message_response
 
         except HTTPException:

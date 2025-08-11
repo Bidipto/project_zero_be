@@ -18,7 +18,7 @@ from schemas.chat import (
     PrivateChatListResponse,
 )
 from schemas.message import MessageListResponse, MessageSendRequest, MessageWithSender
-from core.auth import get_current_user, verify_access_token
+from core.auth import get_current_user
 from core.logger import get_logger
 from db.crud.crud_user import user as crud_user
 from typing import Dict, Any
@@ -332,18 +332,6 @@ def get_websocket_stats():
     return connection_manager.get_connection_stats()
 
 
-@router.get("/test/username/{user_id}", status_code=status.HTTP_200_OK)
-def test_username_extraction(user_id: int, db: Session = Depends(get_db)):
-    """
-    Test endpoint to verify username extraction from user_id.
-    """
-    username = crud_user.get_username_by_id(db, user_id=user_id)
-    if username:
-        return {"user_id": user_id, "username": username, "status": "found"}
-    else:
-        return {"user_id": user_id, "username": None, "status": "not_found"}
-
-
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket, user_id: int, db: Session = Depends(get_db)
@@ -390,31 +378,7 @@ async def websocket_endpoint(
             message_to_broadcast = f"{username}: {message_content}"
             await connection_manager.broadcast(
                 message_to_broadcast, chat_id, user_id, other_user_id
-            )
-
-        # Continue receiving messages
-        # while True:
-        #     data = await websocket.receive_text()
-        #     message = data.split("_")
-        #     received_user_id = int(message[0])
-        #     received_chat_id = int(message[1])
-        #     message_content = message[2]
-
-        #     # Validate that user_id and chat_id match the initial connection
-        #     if received_user_id != user_id or received_chat_id != chat_id:
-        #         logger.warning(
-        #             f"Mismatched user_id or chat_id in message from user {user_id}"
-        #         )
-        #         continue
-
-        #     print(f"User {user_id}, Chat {chat_id}, Message: {message_content}")
-        #     logger.info(
-        #         f"Received message in chat {chat_id} from user {user_id}: {message_content}"
-        #     )
-
-        #     # Broadcast message to other participants
-        #     message_to_broadcast = f"{user_id}: {message_content}"
-        #     await connection_manager.broadcast(message_to_broadcast, chat_id, user_id)
+            )   
 
     except WebSocketDisconnect:
         if user_id and chat_id:
