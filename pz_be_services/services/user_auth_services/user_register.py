@@ -52,6 +52,7 @@ class UserRegisterService:
     def create_user_for_github(self, user_obj: UserCreate):
         user_create = UserBase( 
         username=user_obj.username,
+        email=user_obj.email
         )
         new_user = user.create(self.db, obj_in=user_create)
         return new_user
@@ -67,7 +68,8 @@ class UserRegisterService:
         unique_username = self.ensure_unique_username(user_obj.username)
 
         user_create = UserBase(
-            username=unique_username,    
+            username=unique_username
+                
         )
         new_user = user.create(self.db, obj_in=user_create)
         return new_user
