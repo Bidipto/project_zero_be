@@ -17,7 +17,7 @@ class EnvironmentVariables:
    GITHUB_CLIENT_SECRET=os.getenv("GITHUB_CLIENT_SECRET")
    GITHUB_CLIENT_REDIRECT_URI = "/v1/user/auth/github/callback"
    GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
-   GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token""http://localhost:3000"
+   GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
    GITHUB_USER_API = "https://api.github.com/user"
 
    MIDDLEWARE_SECRET_KEY = os.getenv("MIDDLEWARE_SECRET_KEY")
