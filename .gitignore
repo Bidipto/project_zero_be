@@ -150,8 +150,7 @@ Thumbs.db
 *.sqlite3
 
 # Docker
-.dockerignore
-
+# Keep .dockerignore tracked so Docker builds are reproducible
 # Logs
 *.log
 logs/
