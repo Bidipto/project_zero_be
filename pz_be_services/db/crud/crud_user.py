@@ -92,5 +92,12 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         users = db.query(User.username).filter(User.is_active).all()
         return [user.username for user in users]
 
+    def get_username_by_id(self, db: Session, *, user_id: int) -> Optional[str]:
+        """Get username by user_id"""
+        user = (
+            db.query(User.username).filter(User.id == user_id, User.is_active).first()
+        )
+        return user.username if user else None
+
 
 user = CRUDUser(User)

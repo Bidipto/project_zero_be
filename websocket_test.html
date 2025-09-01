@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 10px;
+        height: 300px;
+        overflow-y: scroll;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Test UI</h1>
+    <div>
+      <label for="chat_id">Chat ID:</label>
+      <input type="text" id="chat_id" value="7" />
+    </div>
+    <div>
+      <label for="user_id">User ID:</label>
+      <input type="text" id="user_id" value="1" />
+    </div>
+    <div>
+      <label for="other_user_id">Other User ID:</label>
+      <input type="text" id="other_user_id" value="2" />
+    </div>
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+    <hr />
+    <div>
+      <label for="message">Message:</label>
+      <input type="text" id="message" size="50" disabled />
+      <button id="sendBtn" disabled>Send</button>
+    </div>
+    <div id="messages"></div>
+
+    <script>
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const sendBtn = document.getElementById("sendBtn");
+      const messageInput = document.getElementById("message");
+      const messagesDiv = document.getElementById("messages");
+      const chatIdInput = document.getElementById("chat_id");
+      const userIdInput = document.getElementById("user_id");
+      const otherUserIdInput = document.getElementById("other_user_id");
+
+      let websocket;
+
+      function log(message) {
+        const p = document.createElement("p");
+        p.textContent = message;
+        messagesDiv.appendChild(p);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      connectBtn.addEventListener("click", () => {
+        const chatId = chatIdInput.value;
+        if (!chatId) {
+          log("Chat ID is required.");
+          return;
+        }
+
+        const wsUri = `ws://localhost:8000/v1/chat/ws/${userIdInput.value}`;
+        websocket = new WebSocket(wsUri);
+
+        websocket.onopen = () => {
+          log("Connected to WebSocket.");
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+        };
+
+        websocket.onmessage = (event) => {
+          log(`Received: ${event.data}`);
+        };
+
+        websocket.onerror = (error) => {
+          log(`WebSocket Error: ${error}`);
+        };
+
+        websocket.onclose = (event) => {
+          let reason = event.reason
+            ? `Reason: ${event.reason}`
+            : "No reason given";
+          log(`Disconnected from WebSocket. Code: ${event.code}. ${reason}`);
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+        };
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        if (websocket) {
+          websocket.close();
+        }
+      });
+      sendBtn.addEventListener("click", () => {
+        const message = messageInput.value;
+        const user_id = userIdInput.value;
+        const chat_id = chatIdInput.value;
+        const other_user_id = otherUserIdInput.value;
+        if (websocket && websocket.readyState === WebSocket.OPEN && message) {
+          websocket.send(
+            user_id + "_" + chat_id + "_" + other_user_id + "_" + message
+          );
+          log(
+            `Sent: ${
+              user_id + "_" + chat_id + "_" + other_user_id + "_" + message
+            }`
+          );
+          messageInput.value = "";
+        }
+      });
+    </script>
+  </body>
+</html>

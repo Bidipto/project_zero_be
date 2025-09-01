@@ -1,7 +1,16 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    status,
+    Depends,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy.orm import Session
 from services.chat_services.private_chat import PrivateChatService
 from services.chat_services.message_service import MessageService
+from services.chat_services.connection_manager import ConnectionManager
 from db.database import get_db
 from schemas.chat import (
     PrivateChatRequest,
@@ -11,10 +20,12 @@ from schemas.chat import (
 from schemas.message import MessageListResponse, MessageSendRequest, MessageWithSender
 from core.auth import get_current_user
 from core.logger import get_logger
+from db.crud.crud_user import user as crud_user
 from typing import Dict, Any
 
 router = APIRouter()
 logger = get_logger("chat")
+connection_manager = ConnectionManager()
 
 
 @router.post(
@@ -276,7 +287,7 @@ def get_unread_message_count(
     response_model=MessageWithSender,
     status_code=status.HTTP_201_CREATED,
 )
-def send_message_to_chat(
+async def send_message_to_chat(
     chat_id: int,
     message_request: MessageSendRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
@@ -293,8 +304,8 @@ def send_message_to_chat(
             f"User {current_user.get('username')} sending message to chat {chat_id}"
         )
 
-        message_service = MessageService(db)
-        message_response = message_service.send_message(
+        message_service = MessageService(db, connection_manager)
+        message_response = await message_service.send_message(
             chat_id=chat_id, user_id=current_user_id, message_request=message_request
         )
 
@@ -311,3 +322,84 @@ def send_message_to_chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while sending message",
         )
+
+
+@router.get("/ws/stats", status_code=status.HTTP_200_OK)
+def get_websocket_stats():
+    """
+    Get current WebSocket connection statistics for debugging.
+    """
+    return connection_manager.get_connection_stats()
+
+
+@router.websocket("/ws/{user_id}")
+async def websocket_endpoint(
+    websocket: WebSocket, user_id: int, db: Session = Depends(get_db)
+):
+    # Get username from user_id using existing design
+    username = crud_user.get_username_by_id(db, user_id=user_id)
+    if not username:
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid user_id"
+        )
+        return
+
+    await connection_manager.connect(websocket, user_id)
+    logger.info(f"User {username} (ID: {user_id}) connected to WebSocket")
+
+    chat_id = None
+    other_user_id = None
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = data.split("_")
+            received_user_id = int(message[0])
+            chat_id = int(message[1])
+            other_user_id = int(message[2])
+            message_content = message[3]
+
+            # Validate that the received user_id matches the path parameter
+            if received_user_id != user_id:
+                logger.warning(
+                    f"User ID mismatch: path={user_id}, message={received_user_id}"
+                )
+                continue
+
+            print(
+                f"User {username} ({user_id}), Chat {chat_id}, Message: {message_content}"
+            )
+            logger.info(f"User {username} connected to chat {chat_id}")
+            logger.info(
+                f"Received message in chat {chat_id} from user {username} ({user_id}): {message_content}"
+            )
+
+            # Broadcast message with username instead of user_id
+            message_to_broadcast = f"{username}: {message_content}"
+            await connection_manager.broadcast(
+                message_to_broadcast, chat_id, user_id, other_user_id
+            )   
+
+    except WebSocketDisconnect:
+        if user_id and chat_id:
+            logger.info(f"User {username} ({user_id}) disconnected from chat {chat_id}")
+            connection_manager.disconnect(websocket, user_id)
+            # Notify other participants with username
+            if other_user_id:
+                await connection_manager.broadcast(
+                    f"User {username} has left the chat.",
+                    chat_id,
+                    user_id,
+                    other_user_id,
+                )
+        else:
+            logger.info(
+                f"User {username} ({user_id}) disconnected before proper connection established"
+            )
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred in WebSocket for user {username} ({user_id}) in chat {chat_id}: {e}",
+            exc_info=True,
+        )
+        if user_id:
+            connection_manager.disconnect(websocket, user_id)
