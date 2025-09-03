@@ -28,17 +28,18 @@ from openai import AzureOpenAI
 router = APIRouter()
 logger = get_logger("chat")
 
+client = AzureOpenAI(
+    api_key=EnvironmentVariables.AZURE_OPENAI_API_KEY,
+    api_version=EnvironmentVariables.AZURE_OPENAI_API_VERSION,
+    azure_endpoint=EnvironmentVariables.AZURE_OPENAI_ENDPOINT,
+)
+
 
 @router.post("/llmtest", tags=["AI"])
 async def llm_test(
     input: str = Query(..., description="Input string to send to Azure OpenAI"),
 ):
     try:
-        client = AzureOpenAI(
-            api_key=EnvironmentVariables.AZURE_OPENAI_API_KEY,
-            api_version=EnvironmentVariables.AZURE_OPENAI_API_VERSION,
-            azure_endpoint=EnvironmentVariables.AZURE_OPENAI_ENDPOINT,
-        )
         response = client.chat.completions.create(
             model=EnvironmentVariables.AZURE_OPENAI_CHAT_DEPLOYMENT_NAME,
             messages=[
