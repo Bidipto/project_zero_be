@@ -304,7 +304,7 @@ async def send_message_to_chat(
             f"User {current_user.get('username')} sending message to chat {chat_id}"
         )
 
-        message_service = MessageService(db, connection_manager)
+        message_service = MessageService(db)
         message_response = await message_service.send_message(
             chat_id=chat_id, user_id=current_user_id, message_request=message_request
         )
@@ -378,7 +378,7 @@ async def websocket_endpoint(
             message_to_broadcast = f"{username}: {message_content}"
             await connection_manager.broadcast(
                 message_to_broadcast, chat_id, user_id, other_user_id
-            )   
+            )
 
     except WebSocketDisconnect:
         if user_id and chat_id:
