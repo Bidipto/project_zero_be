@@ -10,15 +10,13 @@ from schemas.message import (
 from schemas.user import UserInChat
 from core.logger import get_logger
 from fastapi import HTTPException, status
-from services.chat_services.connection_manager import ConnectionManager
 
 logger = get_logger("message_service")
 
 
 class MessageService:
-    def __init__(self, db: Session, connection_manager: ConnectionManager):
+    def __init__(self, db: Session):
         self.db = db
-        self.connection_manager = connection_manager
 
     def get_chat_messages(
         self,
