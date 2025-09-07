@@ -1,0 +1,6 @@
+name: build-gate
+
+on:
+ pull_request:
+   branches:
+     main
